@@ -1,0 +1,52 @@
+***Part I- cleaning data sets and merging
+
+use Alc_Pretest3.dta
+
+*encodr establishment ID 
+
+encode b1, gen(b1_rec)
+codebook b1_rec
+
+*encode site ID
+encode b1a, gen(b1a_rec)
+label define b1a 1"Tsirang" 2"PemaGatshel" 3"Wangdi"
+label value b1a_rec b1a
+
+* generate pre/post test marker variable 
+gen test=1
+
+*recode data that is missing
+replace c6=. if c5==1
+replace c7=. if c5==1
+replace c8=. if c5==1
+replace c9a=. if c5==1
+replace c9b=. if c5==1
+replace c9c=. if c5==1
+replace c9d=. if c5==1
+replace c9d1=. if c5==1
+
+save Alc_Pretest_rec.dta, replace
+
+* post test
+use Alc_Posttest.dta
+
+*encodr establishment ID 
+
+encode b1, gen(b1_rec)
+codebook b1_rec
+*encode site ID
+encode b1a, gen(b1a_rec)
+label define b1a 1"Tsirang" 2"PemaGatshel" 3"Wangdi"
+label value b1a_rec b1a
+
+* generate pre/post test marker variable 
+gen test=2
+
+*recode time of visit
+recode b3 1/12.59=1 13.00/21.00=2
+
+save Alc_Posttest_rec.dta, replace
+
+append using Alc_Pretest_rec.dta
+
+

@@ -1,0 +1,262 @@
+*2- var generation and tabulation
+
+label define test 1"Pre-test" 2 "post-test"
+label val test test
+
+gen success=0 if c5!=.
+replace success=1 if c5==1 // willingly sold alcohol
+replace success=1 if c8==1 // server inquired for more info/denied but ended up serving alcohol
+label define success 0 "failed" 1 "success" 
+label val success success
+label var success "outcome of purchase attempt"
+
+gen comp=1 if success==0
+replace comp=0 if success==1
+label var comp "1= compliance with law or refusal/failed alcohol purchase"
+
+*gen differenc variable N is all purchases that successeed pre-intervention, coded 1 is post-intervention improved
+gen improve=0 if success==0 & test==1
+replace improve=1 if success==1 & test==2 & success==0 & test==1
+label define improve 0 "no improve" 1 "improve"
+label val improve improve
+
+****site of establishment***
+encode b1, gen(store)
+
+****types of purchases****
+*before 1pm
+gen morning= 0 if success!=.
+replace morning=1 if b3==1
+*Tuesday
+gen tuesday=0 if success!=.
+replace tuesday=1 if b2==2
+*underaged adult
+gen underage=0 if success!=.
+replace underage=1 if a2==3
+*intoxicated (not tuesday, no before 1pm)
+gen intox=0 if success!=.
+replace intox=1 if a2==2
+
+**legal visits
+gen legal=0 if success!=.
+replace legal=1 if a2==1 & b3==2 & b2!=2 //exclude legal visits: sober adults during the day.
+
+
+
+*********************************************
+**** Table 1 description of study design ****
+*********************************************
+
+*2 districts Tsirang & PemaGatshel
+*Pretest
+tab a2 b3 if test==1 & b2!=2 & b1a_rec!=3
+tab a2 if test==1 & b2==2 & b1a_rec!=3
+*post test
+tab a2 b3 if test==2 & b2!=2 & b1a_rec!=3
+tab a2 if test==2 & b2==2 & b1a_rec!=3
+
+
+*Tsirang
+*Pretest
+tab a2 b3 if test==1 & b2!=2 & b1a_rec==1
+tab a2 if test==1 & b2==2 & b1a_rec==1
+*post test
+tab a2 b3 if test==2 & b2!=2 & b1a_rec==1
+tab a2 if test==2 & b2==2 & b1a_rec==1
+
+*PemaGatshel
+*Pretest
+tab a2 b3 if test==1 & b2!=2 & b1a_rec==2
+tab a2 if test==1 & b2==2 & b1a_rec==2
+*post test
+tab a2 b3 if test==2 & b2!=2 & b1a_rec==2
+tab a2 if test==2 & b2==2 & b1a_rec==2
+
+*Wangdi
+*Pretest
+tab a2 b3 if test==1 & b2!=2 & b1a_rec==3
+tab a2 if test==1 & b2==2 & b1a_rec==3
+*post test
+tab a2 b3 if test==2 & b2!=2 & b1a_rec==3
+tab a2 if test==2 & b2==2 & b1a_rec==3
+
+
+**************************************************
+**** Table 3 estimated effect of intervention ****
+**************************************************
+
+* purchase attempts and proprotion refused
+*Tsirang and Pema Gatshel
+tab morning success if test==1 & b1a_rec!=3 ,row
+tab morning success if test==2 & b1a_rec!=3 ,row 
+tab success test if valid==0 & b1a_rec!=3 & morning==1 ,col chi
+
+tab tuesday success if test==1 & b1a_rec!=3 ,row 
+tab tuesday success if test==2 & b1a_rec!=3 ,row 
+tab success test if valid==0 & b1a_rec!=3 & tuesday==1 ,col chi
+
+
+tab underage success if test==1 & b1a_rec!=3 ,row 
+tab underage success if test==2 & b1a_rec!=3 ,row 
+tab success test if valid==0 & b1a_rec!=3 & underage==1 ,col chi
+
+
+tab intox success if test==1 & b1a_rec!=3 ,row 
+tab intox success if test==2 & b1a_rec!=3 ,row 
+tab success test if valid==0 & b1a_rec!=3 & intox==1 ,col chi
+
+*crude effect*
+
+encode b1, gen(venue)
+egen cluster_shopper=group(a1) //cluster at the level of shopper
+egen cluster_venue=group(venue) // cluster at the level of establishement ID
+
+ivreg2 comp test if b1a_rec!=3 & morning==1 , cluster(cluster_shopper cluster_venue)
+ivreg2 comp test if b1a_rec!=3 & tuesday==1 , cluster(cluster_shopper cluster_venue)
+ivreg2 comp test if b1a_rec!=3 & underage==1,  cluster(cluster_shopper cluster_venue)
+ivreg2 comp test if b1a_rec!=3 & intox==1   , cluster(cluster_shopper cluster_venue)
+
+ivreg2 comp test if b1a_rec!=3 , cluster(cluster_shopper cluster_venue) //total
+
+*adjusted effect*
+
+ivreg2 comp test tuesday underage intox if b1a_rec!=3 & morning==1 , cluster(cluster_shopper cluster_venue)
+ivreg2 comp test morning underage intox if b1a_rec!=3 & tuesday==1 ,  cluster(cluster_shopper cluster_venue)
+ivreg2 comp test morning tuesday intox if b1a_rec!=3 & underage==1 , cluster(cluster_shopper cluster_venue)
+ivreg2 comp test morning tuesday underage if b1a_rec!=3 & intox==1 , cluster(cluster_shopper cluster_venue)
+
+
+* Tsirang
+tab morning success if test==1 & b1a_rec==1 ,row
+tab morning success if test==2 & b1a_rec==1 ,row 
+
+tab tuesday success if test==1 & b1a_rec==1 ,row 
+tab tuesday success if test==2 & b1a_rec==1 ,row 
+
+tab underage success if test==1 & b1a_rec==1 ,row 
+tab underage success if test==2 & b1a_rec==1 ,row 
+
+tab intox success if test==1 & b1a_rec==1,row 
+tab intox success if test==2 & b1a_rec==1 ,row 
+
+
+tab success test if  b1a_rec==1,col
+
+* Pema Gatshel
+tab morning success if test==1 & b1a_rec==2 ,row
+tab morning success if test==2 & b1a_rec==2 ,row 
+
+tab tuesday success if test==1 & b1a_rec==2 ,row 
+tab tuesday success if test==2 & b1a_rec==2 ,row 
+
+tab underage success if test==1 & b1a_rec==2 ,row 
+tab underage success if test==2 & b1a_rec==2 ,row 
+
+tab intox success if test==1 & b1a_rec==2,row 
+tab intox success if test==2 & b1a_rec==2 ,row 
+
+
+tab success test if valid==0 & b1a_rec==2,col
+
+* Wangdi
+tab morning success if test==1 & b1a_rec==3 ,row
+tab tuesday success if test==1 & b1a_rec==3 ,row 
+tab underage success if test==1 & b1a_rec==3 ,row 
+tab intox success if test==1 & b1a_rec==3,row 
+
+tab success test if valid==0 & b1a_rec==3,col
+
+*Total
+tab morning success if test==1 ,row
+tab tuesday success if test==1,row 
+tab underage success if test==1 ,row 
+tab intox success if test==1 ,row 
+tab success if test==1 
+
+**************************************
+**** Table 4: logistic regression ****
+**************************************
+
+*potential covariates:
+*outcome varialbe: comp, compliance 
+*intervention: test valid 
+*other factors/covariate: premise
+	*outlet type
+	recode b4 (1=1 "bar or drayang") (2=2 "hotel/lodge") (3=3 "restaurant") (4=1) (5=4 "grocery") (6=5 "other"), gen(shop_type)
+	
+	recode b4 (1/4=1 "on premise") (5=2 "off premise"), gen(premise)
+	
+	* venue condition
+	rename b5 ventilation
+	rename b6 condition
+	rename b7 lighting
+	rename b8 noise
+	recode c11g 2=0 , gen(smoke_prohib)
+
+	*server info
+	rename c1 waiter
+	rename c2 female
+	rename c3 lessthan30
+
+	*nature of purchase
+	rename c4 alcoholtype
+	rename c13 busy
+	
+	*signage
+	**alcohol signage*
+	gen signage=0 if success!=.
+	replace signage=1 if c11a==1 | c11b==1 | c11c==1 | c11d==1 |c11e==1 | c11f==1
+	label define yesno 0"no" 1"yes"
+	label value signage yesno
+	label var signage "at least 1 signage on alcohol restrictions displayed in establishment"
+	**recode placement of signage
+	recode c12a 2=0 3=. , gen(sign_place)
+	label value sign_place yesno
+	label var sign_place "proper placement of alcohol sign"
+	 
+*model 1:
+logistic comp test legal i.shop_type  if b1a_rec!=3 
+estat ic //AIC:539.1
+
+*model 2: include server info
+logistic comp test legal i.shop_type waiter female lessthan30 if b1a_rec!=3 
+estat ic //AIC: 540.1
+
+*model 3: include server info +signage/placement + smoking
+logistic comp test legal i.shop_type waiter female lessthan30 signage sign_place smoke_prohib if b1a_rec!=3 
+estat ic // AIC 468.9
+
+*model 4: include server info +signage/placement + smoking + nature of purchase 
+logistic comp test legal i.shop_type waiter female lessthan30 signage sign_place smoke_prohib i.alcoholtype i.busy if b1a_rec!=3 
+estat ic //AIC 457.22
+
+*model 5: include server info + nature of purchase +signage/placement + smoking +  venue condition
+logistic comp test legal i.shop_type waiter female lessthan30 signage sign_place smoke_prohib i.alcoholtype i.busy i.condition i.lighting if b1a_rec!=3 
+estat ic // AIC 461.7
+
+logistic comp test legal i.shop_type waiter female lessthan30  i.alcoholtype i.busy i.condition i.lighting if b1a_rec!=3 
+
+
+**********************
+****Table 2 characteristics****
+*******************************
+*outlet type
+tab shop_type test if b1a_rec!=3,  col
+tab premise test if b1a_rec!=3, col
+
+tab condition test if b1a_rec!=3 , col
+tab lighting test if b1a_rec!=3, col
+tab busy test if b1a_rec!=3 , col
+
+tab waiter test if b1a_rec!=3 , col
+tab female test if b1a_rec!=3 , col
+tab lessthan30 test if b1a_rec!=3 , col
+
+
+tab signage test if b1a_rec!=3  , col
+tab sign_place test if b1a_rec!=3 , col
+tab smoke_prohib test if b1a_rec!=3 , col
+
+tab alcoholtype test if b1a_rec!=3 , col
+
+
